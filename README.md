@@ -5,7 +5,7 @@ This work started as a fork from F4GOH code, so you can visit his [blog](https:/
 how to compile and configure this firmware through his menu. This instead is his github repository: [F4GOH GitHub](https://github.com/f4goh/Weather). I've added some features that, at moment, you can set at compile time using #defines.
 Many thanks to Antonio EA1CDV for his support, beta testing and encouragement, you can read a detailed article in spanish language about this project in his [blog](http://ea1cdv.blogspot.com/2018/08/estacion-meteorologica-aprs-via-wifi.html)
 In a future version maybe i'll change the source code to use native ESP8266 ntp calls instead of using NTPTimeESP, but for the moment the source code needs this library, so you have to add it to your environment, [NTPtimeESP](https://github.com/SensorsIot/NTPtimeESP)
-Obviously you need the [BME280 Library](https://github.com/sparkfun/SparkFun_BME280_Arduino_Library) too: 
+Obviously you need the [BME280 Library (v 2.0.9)](https://github.com/sparkfun/SparkFun_BME280_Arduino_Library) too: 
 
 For the moment this project is running without problems over four flavors of ESP8266:
 - NodeMCU V0.9  (ESP-12)
