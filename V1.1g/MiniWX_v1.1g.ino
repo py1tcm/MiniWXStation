@@ -566,6 +566,7 @@ void setup(void)
 #endif
 
   server.on("/", handleRoot);
+  server.on("/admin", handleAdmin);
   server.on("/submit", handleSubmit);
   server.on("/settings", handleSettings);
   server.on("/jquery", handleJQuery);
@@ -812,6 +813,104 @@ void handleRoot() {
 }
 
 //***********************************************************
+//* MINIWX STATION  - handle Admin page request
+//***********************************************************
+void handleAdmin() {
+
+#ifdef LANG_ENGLISH
+  String page = FPSTR(PAGE_MiniWXAdmin_EN);
+#endif
+#ifdef LANG_BRAZILIAN
+  String page = FPSTR(PAGE_MiniWXAdmin_PT_BR);
+#endif
+#ifdef LANG_SPANISH
+  String page = FPSTR(PAGE_MiniWXAdmin_ES);
+#endif
+#ifdef LANG_ITALIAN
+  String page = FPSTR(PAGE_MiniWXAdmin_IT);
+#endif
+#ifdef LANG_CATALAN
+  String page = FPSTR(PAGE_MiniWXAdmin_CAT);
+#endif
+#ifdef LANG_TURKISH
+  String page = FPSTR(PAGE_MiniWXAdmin_TR);
+#endif
+#ifdef LANG_GERMAN
+  String page = FPSTR(PAGE_MiniWXAdmin_DE);
+#endif
+
+  char buffer[20];
+  float dpdegc;
+
+  readSettingsFile();
+
+  AdjustFieldsets(&page);
+
+  page.replace(F("{{callsign}}"), station.callsign);
+  page.replace(F("{{lat}}"), station.latitude);
+  page.replace(F("{{long}}"), station.longitude);
+  page.replace(F("{{alt}}"), String(station.altitude));
+
+  SystemUpTime();
+  String sysUpTime(String(sysUpTimeDy) + "d : " + String(sysUpTimeHr) + "h : " + String(sysUpTimeMn) + "m : " + String(sysUpTimeSec) + "s" );
+  page.replace(F("{{uptime}}"), sysUpTime);
+
+  getBmeValues();
+
+  // Zero-ing values that can't be display cause lack of rH% in bmp280
+  switch (sets.ChipModel) {
+    case MOD_BMP280:  //temp,press
+      page.replace(F("{{ChipModel}}"), String("BMP280"));
+      wx.humidity = 0.0f;
+      wx.heatindex = 0.0f;
+      dpdegc = 0.0f;
+      break;
+    case MOD_BME280:  //temp,press,rhum
+      page.replace(F("{{ChipModel}}"), String("BME280"));
+      calcDewPoint();
+      dpdegc = (wx.fdewptf - 32.0f) * 0.55f; // Fahrenheit to Celsius
+      break;
+    case 0x00:  // NO SENSOR AT ALL
+      page.replace(F("{{ChipModel}}"), String("NO SENSOR"));
+      wx.temperatureC = 0.0f;
+      wx.temperatureF = 0.0f;
+      wx.pressure = 0.0f;
+      wx.humidity = 0.0f;
+      wx.heatindex = 0.0f;
+      dpdegc = 0.0f;
+      break;
+  }
+
+  page.replace(F("{{degC}}"), String((wx.temperatureC), 2));
+  page.replace(F("{{mbar}}"), String((wx.pressure / 100), 2));
+  page.replace(F("{{rHum}}"), String(wx.humidity, 2));
+  page.replace(F("{{DPdegC}}"), String(dpdegc, 2));
+  page.replace(F("{{HIdegC}}"), String(wx.heatindex, 2));
+
+  sprintf(buffer, "%02d:%02d:%02d", nextHour, nextMinTx, nextSecTx);
+  page.replace(F("{{nexttx}}"), buffer);
+
+  sprintf(buffer, "%02d:%02d:%02d", dateTime.hour, dateTime.minute, dateTime.second);
+  page.replace(F("{{time}}"), buffer);
+
+  page.replace(F("{{SSID}}"), internet.ssid);
+  page.replace(F("{{RSSI}}"), String(WiFi.RSSI()));
+  page.replace(F("{{BSSID}}"), String(WiFi.BSSIDstr()));
+  page.replace(F("{{myip}}"), WiFi.localIP().toString());
+
+  if (sets.usewunder)
+    page.replace(F("{{wunderstate}}"), F(" "));
+  else
+    page.replace(F("{{wunderstate}}"), F("disabled"));
+
+  page.replace(F("{{SOFT_VER}}"), SOFT_VER);
+
+  // Serve page actually
+  server.sendHeader(F("Content-Length"), String(page.length()));
+  server.send ( 200, F("text/html"), page );
+}
+
+//***********************************************************
 //* MINIWX STATION  - handle the main page menu buttons
 //***********************************************************
 void handleSubmit() {
@@ -965,7 +1064,7 @@ void handleSubmit() {
 #ifdef LANG_CATALAN
       message += F("<form><div class='divTable'><div class='divRow'><div class='divColumn' style='width:98%'><div class='notabheader'>Enviant solicitut de sincronisme al servidor NTP...</div>");
 #endif
-#ifdef LANG_ENGLISH
+#ifdef LANG_TURKISH
       message += F("<form><div class='divTable'><div class='divRow'><div class='divColumn' style='width:98%'><div class='notabheader'>NTP sunucusuna istek gönderiyor...</div>");
 #endif
 #ifdef LANG_GERMAN
