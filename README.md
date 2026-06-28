@@ -20,9 +20,10 @@ This is a simple schematics to help connect items to the board, the pinout name 
 **Tanks to Marcelo - PU2SWX for de great job in pt-br translation and WeatherUnderground code correction!!**
 
 **Attention**
-
+```javascript
 The parameters below, which include personal information (callsign, password (except for OTA_passw) and IP
 configuration), are now set via the serial monitor and/or the web page.
+```
 
 These instead are the #defines that you can find in the beginning of the sourcecode, with a brief explanation of what
 happens if you choose to use them, it's a bit rude as method, but there is place for a config webpage hosted completely by the ESP8266....it's in my todo list, not in near future, i need to better test some other features.
