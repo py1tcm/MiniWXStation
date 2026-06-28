@@ -59,7 +59,8 @@
 #include "FS.h"
 
 
-#include "EN_Locale.h"
+//#include "EN_Locale.h"
+#include "PT_BR_Locale.h"
 //#include "ES_Locale.h"
 //#include "IT_Locale.h"
 //#include "CAT_Locale.h"
@@ -92,7 +93,8 @@ const char SOFT_VER[] = "v1.1g";
 //**************************************
 
 //**** CHOOSE WEBPAGES LANGUAGE
-#define LANG_ENGLISH
+//#define LANG_ENGLISH
+#define LANG_BRAZILIAN
 //#define LANG_SPANISH
 //#define LANG_ITALIAN
 //#define LANG_CATALAN
@@ -104,16 +106,16 @@ const char SOFT_VER[] = "v1.1g";
 #define SER_MON_BAUDRATE 74880
 
 //**** How the station is named in your NET
-const char* WiFi_hostname = "MiniWX";
+const char* WiFi_hostname = "Mini-WX";
 
 //**** APRS PASSWORD (use -1 if you are using a CWOP callsign)
-const char* AprsPassw = "YouAPRSnumericalPASS";
+const char* AprsPassw = "YourAprsNumericalPASS";
 
 //**** APRS COMMENT, you can set this string as you want (max 43 chars)
-const char* APRS_CMNT = "MiniWX Station YourHomeTown";
+const char* APRS_CMNT = "ESP8266+BME280 MiniWX Station";
 
 //**** APRS_PRJ, Telemetry Project Title (max 23 chars)
-const char* APRS_PRJ = "MiniWX Project";
+const char* APRS_PRJ = "MiniWX Station";
 
 //**** Comment this for ESP.getVcc() value in telemetry
 //**** getVcc function (system_get_vdd33) is only available when A0 pin17 is suspended (floating),
@@ -121,10 +123,10 @@ const char* APRS_PRJ = "MiniWX Project";
 //#define HAVE_BATTERY
 
 //**** uncomment this for weatherunderground upload,remember to set ID and PASSWORD of your account
-//#define USE_WUNDER
+#define USE_WUNDER
 //* change ID and PASSWORD with yours
 const char ID [] = "YourWunderID";                      
-const char PASSWORD [] = "YourWunderpasswd";
+const char PASSWORD [] = "YourWunderKey";
 
 //**** show BME280 registers in Serial Output;
 //#define DISPLAY_BME_REGS
@@ -133,10 +135,10 @@ const char PASSWORD [] = "YourWunderpasswd";
 
 //**** blinking led to show that into the 10 minutes the system is still alive WILL BE ELIMINATED IN BATTERY POWERED VERSION (1" blink)
 //**** NOTE: WEMOS D1 Mini doens't have this led, NodeMCU V0.9 & V1.0 have it.
-//#define BLINK_RED_LED
+#define BLINK_RED_LED
 
 //**** blinking led to show that ESP8266 is transmitting WILL BE ELIMINATED IN BATTERY POWERED VERSION (0.5" blink)
-//#define BLINK_BLUE_LED
+#define BLINK_BLUE_LED
 
 //**** show (annoying) animated clock in the serial output
 //#define SHOW_TICKS
@@ -148,7 +150,7 @@ const char PASSWORD [] = "YourWunderpasswd";
 const char* NTP_Server = "ntp1.inrim.it"; // ntp (alternative: pool.ntp.org)
 
 //**** Your time zone UTC related (floating point number)
-#define TIME_ZONE 3.0f
+#define TIME_ZONE -4.0f
 
 //**** Set credential for OTA firmware upgrade <<--->>
 //*uncomment the #define if you wanna use this handy feature
@@ -160,7 +162,7 @@ const char* OTA_passw = "esp8266";
 #endif
 
 //**** use static ip instead of dns one
-#define USE_STATIC_IP
+//#define USE_STATIC_IP
 //* change to reflect your net configuration
 String static_ip =      "192.168.100.200";  // STATIC IP
 String static_gateway = "192.168.100.1";    // GATEWAY
@@ -338,45 +340,53 @@ void calcDewPoint() {
   double T = log(VP / 0.61078);
   wx.fdewptf = (241.88 * T) / (17.558 - T);
 }
-
 void Send2Wunder() {
-  // Calculate dew Point
   calcDewPoint();
-  // connect to wunderground
-  if (!client.connect(FPSTR(WGserver), 80)) {
-    Serial.println(F("Send2Wunder Fail"));
+
+  Serial.println("Conectando ao Weather Underground...");
+
+  if (!client.connect("weatherstation.wunderground.com", 80)) {
+    Serial.println("Falha na conexão");
     return;
   }
-  Serial.print(F("WeatherUnderground page updating...."));
 
-  client.print(FPSTR(WEBPAGE));
-  client.print(F("ID="));
-  client.print(sets.wunderid);
-  client.print(F("&PASSWORD="));
-  client.print(sets.wunderpassw);
-  client.print(F("&dateutc="));
-  client.print("now");
-  client.print(F("&tempf="));
-  client.print(wx.temperatureF);
-  client.print(F("&dewptf="));
-  client.print(wx.fdewptf);
-  client.print(F("&humidity="));
-  client.print(wx.humidity);
-  client.print(F("&baromin="));
-  client.print((wx.pressure / 100) * 0.02953f); // 1 mbar = 0.02953 inHg
-  //more compliant WU output by EA1CDV Antonio
-  client.print(F("&softwaretype=MiniWX%20Station%20"));
-  client.print(SOFT_VER);
-  client.print(F("&action=updateraw"));
-  client.println();
-  delay(2500);
-  //Serial.println("done!");
+  // Monta URL completa
+  String url = "/weatherstation/updateweatherstation.php?";
+  url += "ID=" + String(sets.wunderid);
+  url += "&PASSWORD=" + String(sets.wunderpassw);
+  url += "&dateutc=now";
+  url += "&tempf=" + String(wx.temperatureF);
+  url += "&dewptf=" + String(wx.fdewptf);
+  url += "&humidity=" + String(wx.humidity);
+  url += "&baromin=" + String((wx.pressure / 100) * 0.02953f);
+  url += "&softwaretype=ESP8266MiniWX";
+  url += "&action=updateraw";
 
-  //print server reply
-  Serial.print(F("server reply:"));
+  Serial.println("Enviando:");
+  Serial.println(url);
+
+  // 🔥 REQUEST HTTP COMPLETO (ESSENCIAL)
+  client.print(String("GET ") + url + " HTTP/1.1\r\n");
+  client.print("Host: weatherstation.wunderground.com\r\n");
+  client.print("User-Agent: ESP8266/1.0\r\n");
+  client.print("Connection: close\r\n");
+  client.print("\r\n");
+
+  // ⏳ Aguarda resposta
+  long timeout = millis();
+  while (client.available() == 0) {
+    if (millis() - timeout > 5000) {
+      Serial.println("Timeout!");
+      client.stop();
+      return;
+    }
+  }
+
+  Serial.println("Resposta do servidor:");
+
   while (client.available()) {
-    String line = client.readStringUntil('\r');
-    Serial.print(line);
+    String line = client.readStringUntil('\n');
+    Serial.println(line);
   }
 
   client.stop();
@@ -711,6 +721,9 @@ void handleRoot() {
 #ifdef LANG_ENGLISH
   String page = FPSTR(PAGE_Main_EN);
 #endif
+#ifdef LANG_BRAZILIAN
+  String page = FPSTR(PAGE_Main_PT_BR);
+#endif
 #ifdef LANG_SPANISH
   String page = FPSTR(PAGE_Main_ES);
 #endif
@@ -815,9 +828,9 @@ void handleSubmit() {
       message += FPSTR(HTTP_REBOOT_SCRIPT);
       message += FPSTR(HTTP_BODY);
       // Serve page actually
-      message += F("<fieldset style='width:49%'><legend style='text-shadow: 2px 1px grey; font-size: 18px;'>MiniWX&#8482; system message </legend>");
+      message += F("<fieldset style='width:49%'><legend style='text-shadow: 2px 1px grey; font-size: 18px;'>MiniWX&#8482; mensagem do sistema </legend>");
       message += F("<form><div class='divTable'><div class='divRow'><div class='divColumn' style='width:98%'>");
-      message += F("<div class='notabheader'>MiniWX&#8482; is rebooting, please wait 20 secs...</div>");
+      message += F("<div class='notabheader'>MiniWX&#8482; está reiniciando, por favor aguarde 20 segundos...</div>");
       message += FPSTR(HTTP_FOOT);
 
       server.sendHeader(F("Content-Length"), String(message.length()));
@@ -836,6 +849,9 @@ void handleSubmit() {
 #ifdef LANG_ENGLISH
       message.replace(F("{{language}}"), "en");
 #endif
+#ifdef LANG_BRAZILIAN
+      message.replace(F("{{language}}"), "pt_br");
+#endif
 #ifdef LANG_SPANISH
       message.replace(F("{{language}}"), "es");
 #endif
@@ -852,10 +868,13 @@ void handleSubmit() {
       message.replace(F("{{language}}"), "de");
 #endif
       //Display sysmsg in a new page and come back
-      message += F("<fieldset style='width:49%'><legend style='text-shadow: 2px 1px grey; font-size: 18px;'>MiniWX&#8482; system message </legend>");
+      message += F("<fieldset style='width:49%'><legend style='text-shadow: 2px 1px grey; font-size: 18px;'>MiniWX&#8482; mensagem do sistema </legend>");
 
 #ifdef LANG_ENGLISH
       message += F("<form><div class='divTable'><div class='divRow'><div class='divColumn' style='width:98%'><div class='notabheader'>Sending packets to APRS server...</div>");
+#endif
+#ifdef LANG_BRAZILIAN
+      message += F("<form><div class='divTable'><div class='divRow'><div class='divColumn' style='width:98%'><div class='notabheader'>Enviando pacote para o servidor APRS...</div>");
 #endif
 #ifdef LANG_SPANISH
       message += F("<form><div class='divTable'><div class='divRow'><div class='divColumn' style='width:98%'><div class='notabheader'>Enviando trama al servidor APRS...</div>");
@@ -889,10 +908,13 @@ void handleSubmit() {
 
       //Display sysmsg in a new page and come backe
 
-      message += F("<fieldset style='width:49%'><legend style='text-shadow: 2px 1px grey; font-size: 18px;'>MiniWX&#8482; system message </legend>");
+      message += F("<fieldset style='width:49%'><legend style='text-shadow: 2px 1px grey; font-size: 18px;'>MiniWX&#8482; mensagem do sistema </legend>");
 
 #ifdef LANG_ENGLISH
       message += F("<form><div class='divTable'><div class='divRow'><div class='divColumn' style='width:98%'><div class='notabheader'>Sending packets to WUNDER server...</div>");
+#endif
+#ifdef LANG_BRAZILIAN
+      message += F("<form><div class='divTable'><div class='divRow'><div class='divColumn' style='width:98%'><div class='notabheader'>Enviando pacote para o servidor WUNDER...</div>");
 #endif
 #ifdef LANG_SPANISH
       message += F("<form><div class='divTable'><div class='divRow'><div class='divColumn' style='width:98%'><div class='notabheader'>Enviando trama al servidor WUNDER...</div>");
@@ -926,10 +948,13 @@ void handleSubmit() {
 
       //Display sysmsg in a new page and come backe
 
-      message += F("<fieldset style='width:49%'><legend style='text-shadow: 2px 1px grey; font-size: 18px;'>MiniWX&#8482; system message </legend>");
+      message += F("<fieldset style='width:49%'><legend style='text-shadow: 2px 1px grey; font-size: 18px;'>MiniWX&#8482; mensagem do sistema </legend>");
 
 #ifdef LANG_ENGLISH
       message += F("<form><div class='divTable'><div class='divRow'><div class='divColumn' style='width:98%'><div class='notabheader'>Sending NTP SYNC request to server...</div>");
+#endif
+#ifdef LANG_BRAZILIAN
+      message += F("<form><div class='divTable'><div class='divRow'><div class='divColumn' style='width:98%'><div class='notabheader'>Enviando solicitação p/ o servidor NTP...</div>");
 #endif
 #ifdef LANG_SPANISH
       message += F("<form><div class='divTable'><div class='divRow'><div class='divColumn' style='width:98%'><div class='notabheader'>Enviando sync solicitud al servidor NTP...</div>");
@@ -1011,9 +1036,9 @@ void handleSubmit() {
         }
       }
 
-      message += F("<legend style='text-shadow: 2px 1px grey; font-size: 18px;'>MiniWX&#8482; scanning found ");
+      message += F("<legend style='text-shadow: 2px 1px grey; font-size: 18px;'>MiniWX&#8482; scan encontrou ");
       message += String(i);
-      message += F(" networks </legend>");
+      message += F(" rede(s) </legend>");
       message += stations;
       message += F("</tbody></table></div></fieldset>");
       //message += F("<form>"); // Already in HTTP_EXIT_BUTN
@@ -1021,6 +1046,9 @@ void handleSubmit() {
 
     #ifdef LANG_ENGLISH
       message.replace(F("{{exit_btn}}"), "Exit");
+    #endif
+     #ifdef LANG_BRAZILIAN
+      message.replace(F("{{exit_btn}}"), "Sair");
     #endif
     #ifdef LANG_SPANISH
       message.replace(F("{{exit_btn}}"), "Salir");
@@ -1097,8 +1125,8 @@ void handleSubmit() {
 
       message += FPSTR(HTTP_SETS_SCRIPT);
       message += FPSTR(HTTP_BODY);
-      message += F("<fieldset style='width:49%'><legend style='text-shadow: 2px 1px grey; font-size: 18px;'>MiniWX&#8482; system message </legend>");
-      message += F("<form><div class='divTable'><div class='divRow'><div class='divColumn' style='width:98%'><div class='notabheader'>Saving new settings in Flash memory...</div>");
+      message += F("<fieldset style='width:49%'><legend style='text-shadow: 2px 1px grey; font-size: 18px;'>MiniWX&#8482; mensagem do sistema </legend>");
+      message += F("<form><div class='divTable'><div class='divRow'><div class='divColumn' style='width:98%'><div class='notabheader'>Salvando configurações na memória Flash...</div>");
       message += F("</div></div></div></form></fieldset>");
       message += FPSTR(HTTP_FOOT);
 
@@ -1165,6 +1193,9 @@ void handleSettings() {
 
 #ifdef LANG_ENGLISH
   String page = FPSTR(PAGE_MiniWXSettings_EN);
+#endif
+#ifdef LANG_BRAZILIAN
+  String page = FPSTR(PAGE_MiniWXSettings_PT_BR);
 #endif
 #ifdef LANG_SPANISH
   String page = FPSTR(PAGE_MiniWXSettings_ES);
@@ -1241,6 +1272,9 @@ void handleNotFound() {
 #ifdef LANG_ENGLISH
   message.replace(F("{{language}}"), "en");
 #endif
+#ifdef LANG_BRAZILIAN
+  message.replace(F("{{language}}"), "pt_br");
+#endif
 #ifdef LANG_SPANISH
   message.replace(F("{{language}}"), "es");
 #endif
@@ -1294,6 +1328,9 @@ void handleGraphs() {
 #ifdef LANG_ENGLISH
   message.replace(F("{{language}}"), "en");
 #endif
+#ifdef LANG_BRAZILIAN
+  message.replace(F("{{language}}"), "pt_br");
+#endif
 #ifdef LANG_SPANISH
   message.replace(F("{{language}}"), "es");
 #endif
@@ -1317,6 +1354,12 @@ void handleGraphs() {
   message.replace(F("{{svg_temp}}"), "Temperature (°C)");
   message.replace(F("{{svg_pres}}"), "Pressure (hPa)");
   message.replace(F("{{svg_rhum}}"), "relative Humidity (%)");
+  message.replace(F("{{svg_rssi}}"), "rssi (dbm)");
+#endif
+#ifdef LANG_BRAZILIAN
+  message.replace(F("{{svg_temp}}"), "Temperatura °C");
+  message.replace(F("{{svg_pres}}"), "Pressão (hPa)");
+  message.replace(F("{{svg_rhum}}"), "Umidade relativa (%)");
   message.replace(F("{{svg_rssi}}"), "rssi (dbm)");
 #endif
 #ifdef LANG_SPANISH
@@ -1354,6 +1397,9 @@ void handleGraphs() {
   message += FPSTR(HTTP_EXIT_BUTN);
 #ifdef LANG_ENGLISH
   message.replace(F("{{exit_btn}}"), "Exit");
+#endif
+#ifdef LANG_BRAZILIAN
+  message.replace(F("{{exit_btn}}"), "Sair");
 #endif
 #ifdef LANG_SPANISH
   message.replace(F("{{exit_btn}}"), "Salir");
