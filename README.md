@@ -21,8 +21,8 @@ This is a simple schematics to help connect items to the board, the pinout name 
 
 **Attention**
 ```javascript
-The parameters below, which include personal information (callsign, password (except for OTA_passw) and IP
-configuration), are now set via the serial monitor and/or the web page.
+The parameters below, which include personal information (callsign, password (except for OTA_passw
+and IP configuration), are now set via the serial monitor and/or the web page.
 ```
 
 These instead are the #defines that you can find in the beginning of the sourcecode, with a brief explanation of what
