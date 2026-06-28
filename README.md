@@ -1,4 +1,7 @@
 # MiniWX Station
+
+**Branch with admin page separate**
+
 ESP8266 IoT and BME280 sensor for a minimalist weather station
 
 This work started as a fork from F4GOH code, so you can visit his [blog](https://hamprojects.wordpress.com/) for infos about
