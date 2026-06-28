@@ -17,7 +17,7 @@ This is a simple schematics to help connect items to the board, the pinout name 
 
 ![fritzing_Image](https://github.com/IU5HKU/MiniWXStation/blob/master/Images/Schematics.jpg)
 
-#Tanks to Marcelo - PU2SWX for de great job in pt-br translation and WeatherUnderground code correction!!#
+#Tanks to Marcelo - PU2SWX for de great job in pt-br translation and WeatherUnderground code correction!!
 
 **Attention**
 
